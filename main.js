@@ -17,7 +17,7 @@ const client = new Client({
 });
 
 // --- הגדרות ה-IDs שלך (ido & packs) ---
-const TOKEN = 'MTQ4MDIzNjQwNTQ3NjE2MzYzNA.GhwXI1.EmjFlqQamSO0ihqTaNGhSww-740Zml25gOUSRU'; 
+const TOKEN = process.env.TOKEN; 
 const VERIFY_ROLE_ID = '1480233905498882168'; // רול pack
 const STAFF_ROLE_ID = '1480241408190316595';  // רול צוות
 const WELCOME_CHANNEL_ID = '1480233707968135321'; // ערוץ ברוכים הבאים
@@ -111,5 +111,6 @@ client.on('interactionCreate', async (interaction) => {
         }
     } catch (err) { console.error(err); }
 });
+
 
 client.login(TOKEN);
