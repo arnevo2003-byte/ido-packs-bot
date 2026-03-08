@@ -1,116 +1,123 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
 const express = require('express');
-const app = express();
 
-// שרת למניעת שינה ב-Render
-app.get('/', (req, res) => res.send('ido & packs is Online 24/7! 🚀'));
-const port = process.env.PORT || 3002;
-app.listen(port, () => console.log(`📡 השרת רץ על פורט ${port}`));
+// שרת לשמירה על הבוט דלוק 24/7 ב-Render
+const app = express();
+const port = process.env.PORT || 10000;
+app.get('/', (req, res) => res.send('Ido & Packs Multi-Bot is Online! 🚀'));
+app.listen(port, () => console.log(`✅ השרת רץ על פורט ${port}`));
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildMessageReactions,
         GatewayIntentBits.GuildMembers
     ]
 });
 
-// --- הגדרות ה-IDs שלך (ido & packs) ---
-const TOKEN = process.env.TOKEN; 
-const VERIFY_ROLE_ID = '1480233905498882168'; // רול pack
-const STAFF_ROLE_ID = '1480241408190316595';  // רול צוות
-const WELCOME_CHANNEL_ID = '1480233707968135321'; // ערוץ ברוכים הבאים
-// --------------------------------------------------
+const TOKEN = process.env.TOKEN;
 
 client.once('ready', () => {
-    console.log(`✅ הבוט ${client.user.tag} מחובר ללא מוזיקה ומוכן לעבודה!`);
+    console.log(`✅ הבוט ${client.user.tag} מחובר עם כל המערכות: טיקטים, אימות והגרלות!`);
 });
 
-// הודעת ברוכים הבאים טקסטואלית
-client.on('guildMemberAdd', async (member) => {
-    try {
-        const channel = member.guild.channels.cache.get(WELCOME_CHANNEL_ID);
-        if (!channel) return;
-        const welcomeEmbed = new EmbedBuilder()
-            .setTitle('ברוך הבא ל-ido & packs! 🎉')
-            .setDescription(`שלום ${member}, שמחים שהצטרפת! אל תשכח לבצע אימות בערוץ המתאים.`)
-            .setColor('#00ff00')
-            .setThumbnail(member.user.displayAvatarURL());
-        
-        await channel.send({ embeds: [welcomeEmbed] });
-    } catch (e) { console.error("שגיאה בברוכים הבאים:", e); }
+// --- מערכת ברוכים הבאים ---
+client.on('guildMemberAdd', member => {
+    const welcomeChannel = member.guild.channels.cache.find(ch => ch.name === 'welcome' || ch.name === 'ברוכים-הבאים');
+    if (!welcomeChannel) return;
+
+    const embed = new EmbedBuilder()
+        .setTitle(`ברוך הבא לשרת, ${member.user.username}! 🎉`)
+        .setDescription('אנחנו שמחים שהצטרפת אלינו! אל תשכח לעבור באימות.')
+        .setThumbnail(member.user.displayAvatarURL())
+        .setColor('#5865F2');
+
+    welcomeChannel.send({ embeds: [embed] });
 });
 
-client.on('messageCreate', async (message) => {
-    if (message.author.bot) return;
+// --- פקודות הגדרה (Setup) ---
+client.on('messageCreate', async message => {
+    if (message.author.bot || !message.member.permissions.has(PermissionFlagsBits.Administrator)) return;
 
+    // הגדרת הודעת אימות (Verify)
     if (message.content === '!setup-verify') {
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('v_btn').setLabel('אימות pack ✅').setStyle(ButtonStyle.Success)
-        );
         const embed = new EmbedBuilder()
-            .setTitle('מערכת אימות - ido & packs')
-            .setDescription('לחצו על הכפתור למטה כדי לקבל רול pack.')
-            .setColor('#2ecc71');
+            .setTitle('מערכת אימות 🛡️')
+            .setDescription('לחצו על הכפתור למטה כדי לקבל גישה לשרת.')
+            .setColor('#00ff00');
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('verify_btn').setLabel('אימות').setStyle(ButtonStyle.Success)
+        );
+
         message.channel.send({ embeds: [embed], components: [row] });
     }
 
-    if (message.content === '!setup-tickets') {
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('open_t').setLabel('פתח פנייה 📩').setStyle(ButtonStyle.Primary)
-        );
+    // הגדרת הודעת טיקטים (Tickets)
+    if (message.content === '!setup-ticket') {
         const embed = new EmbedBuilder()
-            .setTitle('מרכז תמיכה ורכישות')
-            .setDescription('צריכים עזרה או רוצים לקנות? פתחו טיקט כאן.')
-            .setColor('#3498db');
+            .setTitle('מערכת תמיכה 🎫')
+            .setDescription('זקוקים לעזרה? לחצו על הכפתור למטה כדי לפתוח טיקט.')
+            .setColor('#5865F2');
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('open_ticket').setLabel('פתח טיקט').setStyle(ButtonStyle.Primary)
+        );
+
         message.channel.send({ embeds: [embed], components: [row] });
+    }
+
+    // פקודת הגרלה: !giveaway [פרס]
+    if (message.content.startsWith('!giveaway')) {
+        const prize = message.content.split(' ').slice(1).join(' ');
+        if (!prize) return message.reply('כתוב פרס! דוגמה: `!giveaway משחק חינם`');
+
+        const embed = new EmbedBuilder()
+            .setTitle('🎉 הגרלה! 🎉')
+            .setDescription(`הפרס: **${prize}**\nלחצו על 🎉 כדי להשתתף!`)
+            .setColor('#f1c40f');
+
+        const msg = await message.channel.send({ embeds: [embed] });
+        await msg.react('🎉');
+
+        setTimeout(async () => {
+            const reaction = msg.reactions.cache.get('🎉');
+            const users = await reaction.users.fetch();
+            const winner = users.filter(u => !u.bot).random();
+            message.channel.send(winner ? `🎊 מזל טוב ל-${winner}! זכית ב: **${prize}**!` : 'אין משתתפים בהגרלה.');
+        }, 60000);
     }
 });
 
-client.on('interactionCreate', async (interaction) => {
+// --- טיפול בכפתורים (אימות וטיקטים) ---
+client.on('interactionCreate', async interaction => {
     if (!interaction.isButton()) return;
 
-    try {
-        if (interaction.customId === 'v_btn') {
-            await interaction.deferReply({ ephemeral: true });
-            await interaction.member.roles.add(VERIFY_ROLE_ID);
-            return interaction.editReply('קיבלת רול pack בהצלחה! 🎉');
-        }
+    // לוגיקת אימות
+    if (interaction.customId === 'verify_btn') {
+        const role = interaction.guild.roles.cache.find(r => r.name === 'Member' || r.name === 'ממבר');
+        if (!role) return interaction.reply({ content: 'לא נמצא רול בשם Member.', ephemeral: true });
+        
+        await interaction.member.roles.add(role);
+        await interaction.reply({ content: 'עברת את האימות בהצלחה! ✅', ephemeral: true });
+    }
 
-        if (interaction.customId === 'open_t') {
-            await interaction.deferReply({ ephemeral: true });
-            const ticketChannel = await interaction.guild.channels.create({
-                name: `ticket-${interaction.user.username}`,
-                type: ChannelType.GuildText,
-                permissionOverwrites: [
-                    { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                    { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-                    { id: STAFF_ROLE_ID, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-                ],
-            });
+    // לוגיקת טיקטים
+    if (interaction.customId === 'open_ticket') {
+        const channel = await interaction.guild.channels.create({
+            name: `ticket-${interaction.user.username}`,
+            type: ChannelType.GuildText,
+            permissionOverwrites: [
+                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+            ],
+        });
 
-            const row = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('claim_t').setLabel('🙋‍♂️ קח טיפול').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('close_t').setLabel('🔒 סגור טיקט').setStyle(ButtonStyle.Danger)
-            );
-
-            await ticketChannel.send({ content: `שלום ${interaction.user}, המתן לצוות.`, components: [row] });
-            return interaction.editReply(`הטיקט נפתח: ${ticketChannel}`);
-        }
-
-        if (interaction.customId === 'claim_t') {
-            if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) return interaction.reply({ content: 'רק סטאף יכול!', ephemeral: true });
-            await interaction.update({ components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('c').setLabel('בטיפול...').setStyle(ButtonStyle.Secondary).setDisabled(true))] });
-            return interaction.channel.send({ embeds: [new EmbedBuilder().setDescription(`⚡ בטיפול של: ${interaction.user}`).setColor('#2ecc71')] });
-        }
-
-        if (interaction.customId === 'close_t') {
-            await interaction.reply('נסגר בעוד 3 שניות...');
-            setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
-        }
-    } catch (err) { console.error(err); }
+        await interaction.reply({ content: `הטיקט שלך נפתח: ${channel}`, ephemeral: true });
+        channel.send(`שלום ${interaction.user}, צוות התמיכה יתפנה אליך בהקדם.`);
+    }
 });
 
-
-client.login(TOKEN);
+client.login(TOKEN).catch(err => console.error('❌ שגיאת טוקן:', err));
